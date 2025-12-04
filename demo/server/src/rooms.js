@@ -16,6 +16,18 @@ class Room {
   }
 }
 
+function getRoomMetaData() {
+  const summaries = [];
+  for (const [id, room] of rooms.entries()) {
+    summaries.push({
+      id: room.id,
+      name: room.name,
+      participants: room.participants.size,
+    });
+  }
+  return summaries;
+}
+
 function getOrCreateRoom(name) {
   if (rooms.has(name)) {
     return rooms.get(name);
@@ -69,4 +81,5 @@ module.exports = {
   joinRoom,
   removeParticipantFromAllRooms,
   addChatMessage,
+  getRoomMetaData,
 };

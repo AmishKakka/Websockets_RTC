@@ -1,102 +1,134 @@
-import React, { useState } from "react";
-
-const dummyRooms = [
-  { id: "algos", name: "Algorithms Study", participants: 3 },
-  { id: "webrtc", name: "WebRTC Lab", participants: 2 },
-  { id: "db", name: "Databases Deep Dive", participants: 4 },
-];
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const LobbyPage = () => {
-  const [nickname, setNickname] = useState("");
-  const [selectedRoomId, setSelectedRoomId] = useState(dummyRooms[0]?.id);
+  const [nickname, setNickname] = useState('');
+  const [rooms, setRooms] = useState([]);
+  const [selectedRoomId, setSelectedRoomId] = useState(null);
+  const navigate = useNavigate();
+  const ws = useRef(null);
+
+  useEffect(() => {
+    ws.current = new WebSocket('ws://localhost:3001');
+
+    ws.current.onopen = () => {
+      console.log('Lobby connected to server');
+    };
+
+    ws.current.onmessage = (event) => {
+      try {
+        const { type, payload } = JSON.parse(event.data);
+        if (type === 'ROOM_LIST_UPDATE') {
+          if (payload.rooms) {
+            setRooms(payload.rooms);
+          }
+        }
+      } catch (err) {
+        console.error('Lobby WS Error:', err);
+      }
+    };
+
+    return () => {
+      if (ws.current) ws.current.close();
+    };
+  }, []);
 
   const handleCreateRoom = () => {
-    alert("TODO: implement create room with WebSocket + navigation");
+    if (!nickname) {
+      alert('Please enter a nickname first.');
+      return;
+    }
+    const newRoomName = prompt('Enter new room name:');
+    if (newRoomName) {
+      navigate(`/room/${newRoomName}`, { state: { nickname } });
+    }
   };
 
   const handleJoinRoom = () => {
     if (!selectedRoomId) {
-      alert("Please select a room to join.");
+      alert('Please select a room to join.');
       return;
     }
-    alert(
-      `TODO: navigate to /rooms/${selectedRoomId} and join via WebSocket as ${nickname ||
-        "anonymous"}`
-    );
+    if (!nickname) {
+      alert('Please enter a nickname.');
+      return;
+    }
+    navigate(`/room/${selectedRoomId}`, { state: { nickname } });
   };
 
   return (
-    <div className="lobby-grid card">
-      <section className="lobby-left">
-        <h2 className="section-title">Welcome</h2>
-        <p className="section-subtitle">
+    <div className='lobby-grid card'>
+      <section className='lobby-left'>
+        <h2 className='section-title'>Welcome</h2>
+        <p className='section-subtitle'>
           Pick a display name and join a study room. Later, WebSockets will keep
           this lobby live.
         </p>
 
         <div style={{ marginTop: 16, maxWidth: 360 }}>
           <label
-            htmlFor="nickname"
-            style={{ display: "block", fontSize: 13, marginBottom: 6 }}
+            htmlFor='nickname'
+            style={{ display: 'block', fontSize: 13, marginBottom: 6 }}
           >
             Nickname
           </label>
           <input
-            id="nickname"
-            className="input"
-            placeholder="Enter your display name"
+            id='nickname'
+            className='input'
+            placeholder='Enter your display name'
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
           />
-          <p className="text-muted" style={{ marginTop: 6 }}>
+          <p className='text-muted' style={{ marginTop: 6 }}>
             This will show up in chat, reactions, and the participant list.
           </p>
         </div>
       </section>
 
-      <section className="lobby-right card-soft">
-        <h2 className="section-title">Available rooms</h2>
-        <p className="section-subtitle">
-          These rooms are currently hardcoded. In the tutorial, you will replace
-          them with realtime data from the WebSocket server.
+      <section className='lobby-right card-soft'>
+        <h2 className='section-title'>Available rooms</h2>
+        <p className='section-subtitle'>
+          {rooms.length === 0
+            ? 'No active rooms. Create one to get started!'
+            : 'Join an active conversation below.'}
         </p>
 
-        <div className="room-list">
-          {dummyRooms.map((room) => {
+        <div className='room-list'>
+          {rooms.map((room) => {
             const selected = room.id === selectedRoomId;
             return (
               <button
                 key={room.id}
-                type="button"
-                className={`room-card ${selected ? "selected" : ""}`}
+                type='button'
+                className={`room-card ${selected ? 'selected' : ''}`}
                 onClick={() => setSelectedRoomId(room.id)}
               >
-                <div className="room-card-main">
-                  <span className="room-dot" />
+                <div className='room-card-main'>
+                  <span className='room-dot' />
                   <div>
-                    <div className="room-name">{room.name}</div>
-                    <div className="room-meta">
+                    <div className='room-name'>{room.name}</div>
+                    <div className='room-meta'>
                       {room.participants} participants
                     </div>
                   </div>
                 </div>
-                <span className="room-meta">Join</span>
+                <span className='room-meta'>Join</span>
               </button>
             );
           })}
         </div>
 
-        <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
+        <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
           <button
-            type="button"
-            className="btn btn-ghost btn-pill"
+            type='button'
+            className='btn btn-ghost btn-pill'
             onClick={handleCreateRoom}
           >
             + Create room
           </button>
           <button
-            type="button"
-            className="btn btn-primary btn-pill"
+            type='button'
+            className='btn btn-primary btn-pill'
             onClick={handleJoinRoom}
           >
             Join selected room
