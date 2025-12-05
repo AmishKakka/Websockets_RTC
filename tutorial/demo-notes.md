@@ -1,0 +1,102 @@
+# Realtime Study Rooms demo notes
+
+This document captures the build steps for the Realtime Study Rooms demo so we can later turn it into a polished tutorial.
+
+## Feature template
+
+### Goal
+- State the user-facing outcome for this feature.
+
+### Files you will edit
+- List the paths you expect to change.
+
+### Steps
+1. List the actions in order.
+
+### Checkpoint
+- Describe what to verify before moving on.
+
+## Feature 0: Project setup and starter UI
+
+### Goal
+- Set up the repo locally and confirm the starter lobby UI loads.
+
+### Files you will edit
+- None yet; just install and run the server/client apps.
+
+### Steps
+1. Clone the repo locally.
+2. Install server dependencies: `cd demo/server && npm install`.
+3. Install client dependencies: `cd demo/client && npm install`.
+4. Start the server: from `demo/server`, run `node src/index.js`.
+5. Start the client: from `demo/client`, run `npm run dev`.
+6. Visit the lobby in your browser (the dev server URL), then manually open `/room/test-room` to confirm routing.
+
+### Checkpoint
+- Lobby page renders, and navigating directly to `/room/test-room` loads the starter room view without errors in the console.
+
+## Feature 1: WebSocket protocol overview
+
+### Goal
+- Understand the message types used between the browser and server.
+
+### Files you will edit
+- tutorial/demo-notes.md
+- demo/server/src/messages.js
+- demo/server/src/index.js
+- demo/client WebSocket helper (currently inline within the page components)
+- demo/client/src/pages/LobbyPage.jsx
+- demo/client/src/pages/RoomPage.jsx
+
+### Steps
+1. `ROOM_LIST_SUBSCRIBE` — Browser lobby ➝ server to ask for the current rooms and future updates (server currently pushes an update on connect even without this message).
+   ```json
+   {"type":"ROOM_LIST_SUBSCRIBE"}
+   ```
+   Meaning: subscribe to lobby updates; server responds with `ROOM_LIST_UPDATE`.
+2. `ROOM_LIST_UPDATE` — Server ➝ all connected clients to share lobby or room state. In the lobby it carries room summaries; after join it can also include participants and chat history.
+   ```json
+   {"type":"ROOM_LIST_UPDATE","payload":{"rooms":[{"id":"abc","name":"math-study","participants":2}]}}
+   ```
+   Another shape sent to a joining client includes room detail:
+   ```json
+   {"type":"ROOM_LIST_UPDATE","payload":{"roomId":"abc","roomName":"math-study","participants":[{"id":1,"name":"User 1"}],"chatHistory":[]}}
+   ```
+   Meaning: keep lobby and room UIs in sync with the server’s state.
+3. `CREATE_ROOM` — Browser lobby ➝ server to explicitly create a new room.
+   ```json
+   {"type":"CREATE_ROOM","payload":{"roomName":"math-study","createdBy":"Pat"}}
+   ```
+   Meaning: request a room be created; in the current code a room is created implicitly when the first `JOIN_ROOM` arrives.
+4. `JOIN_ROOM` — Browser room page ➝ server when a user enters a room.
+   ```json
+   {"type":"JOIN_ROOM","payload":{"roomName":"test-room","name":"Pat"}}
+   ```
+   Meaning: server tracks the participant, sends back a `ROOM_LIST_UPDATE` with participants and chat history, and broadcasts `PARTICIPANT_JOINED` plus a system message to everyone else.
+5. `LEAVE_ROOM` — Browser ➝ server to exit a room.
+   ```json
+   {"type":"LEAVE_ROOM","payload":{"roomName":"test-room"}}
+   ```
+   Meaning: server should remove the participant and broadcast `PARTICIPANT_LEFT` (today the removal happens when the socket closes).
+6. `CHAT_MESSAGE` — Browser ➝ server to send chat text; server ➝ room to fan it out with metadata.
+   ```json
+   {"type":"CHAT_MESSAGE","payload":{"text":"Hello team!"}}
+   ```
+   Broadcast shape after server enriches it:
+   ```json
+   {"type":"CHAT_MESSAGE","payload":{"id":"uuid","sender":"Pat","text":"Hello team!","timestamp":"2024-03-01T12:00:00.000Z"}}
+   ```
+   Meaning: carry chat content from one participant to all others.
+7. `PARTICIPANT_JOINED` — Server ➝ room participants (except the joiner).
+   ```json
+   {"type":"PARTICIPANT_JOINED","payload":{"id":2,"name":"Alex"}}
+   ```
+   Meaning: update the participant list when someone enters.
+8. `PARTICIPANT_LEFT` — Server ➝ room participants when someone leaves or disconnects.
+   ```json
+   {"type":"PARTICIPANT_LEFT","payload":{"id":2}}
+   ```
+   Meaning: remove the participant from the list and reflect that departure in the UI.
+
+### Checkpoint
+- After reading this section, you should be able to sketch a simple diagram showing how a chat message travels from one browser to the server and then out to every other client in the same room.
