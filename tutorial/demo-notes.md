@@ -120,3 +120,22 @@ This document captures the build steps for the Realtime Study Rooms demo so we c
 
 ### Checkpoint
 - With devtools open, refresh the app: the server logs should show `Client <id> identified as <nickname>` for each tab, and each tab should maintain exactly one active WebSocket connection.
+
+## Feature 3: Realtime lobby room list
+
+### Goal
+- Replace the hardcoded lobby room list with live data from WebSocket messages so multiple tabs stay in sync without manual refresh.
+
+### Files you will edit
+- demo/server/src/rooms.js
+- demo/server/src/index.js
+- demo/client/src/pages/LobbyPage.jsx
+
+### Steps
+1. Add a helper on the server that returns an array of room summaries (room name and participant count) from the in-memory rooms map.
+2. When the server receives `ROOM_LIST_SUBSCRIBE`, add that connection to a subscribers set and immediately send `ROOM_LIST_UPDATE` with the current summaries.
+3. Broadcast `ROOM_LIST_UPDATE` to all lobby subscribers whenever rooms are created or participants join/leave.
+4. In `LobbyPage`, open a WebSocket on mount, send `ROOM_LIST_SUBSCRIBE`, keep a `rooms` state from incoming `ROOM_LIST_UPDATE` messages, and render the list from that state with graceful empty handling.
+
+### Checkpoint
+- With two browser tabs open on the lobby, creating a room in tab A should make that room appear in tab B within about a second, without pressing refresh.

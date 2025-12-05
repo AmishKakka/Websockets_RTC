@@ -10,11 +10,13 @@ const LobbyPage = () => {
   const ws = useRef(null);
 
   useEffect(() => {
+    // Tip: open two tabs; both subscribe here and will receive live ROOM_LIST_UPDATE pushes as rooms change.
     ws.current = new WebSocket('ws://localhost:3001');
 
     ws.current.onopen = () => {
       console.log('Lobby connected to server');
       // TODO: Send IDENTIFY with nickname once collected so the server knows this user.
+      ws.current.send(JSON.stringify({ type: 'ROOM_LIST_SUBSCRIBE' }));
     };
 
     ws.current.onmessage = (event) => {
@@ -106,9 +108,10 @@ const LobbyPage = () => {
         <div className='room-list'>
           {rooms.map((room) => {
             const selected = room.name === selectedRoomName;
+            const count = room.participantCount ?? room.participants ?? 0;
             return (
               <button
-                key={room.id}
+                key={room.id || room.name}
                 type='button'
                 className={`room-card ${selected ? 'selected' : ''}`}
                 onClick={() => setSelectedRoomName(room.name)}
@@ -118,7 +121,7 @@ const LobbyPage = () => {
                   <div>
                     <div className='room-name'>{room.name}</div>
                     <div className='room-meta'>
-                      {room.participants} participants
+                      {count} participants
                     </div>
                   </div>
                 </div>

@@ -12,6 +12,8 @@ const {
 const PORT = 3001;
 const clients = new Map(); // clientId -> { ws, name }
 const IDENTIFY_TYPE = MessageTypes.IDENTIFY || 'IDENTIFY';
+// Track lobby subscribers so every open tab stays in sync with the shared room list.
+const lobbySubscribers = new Set();
 const server = http.createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -40,15 +42,16 @@ function broadcastToRoom(room, message, excludeClientId = null) {
 }
 
 function broadcastRoomList() {
-  const data = getRoomMetaData();
   const message = JSON.stringify({
     type: MessageTypes.ROOM_LIST_UPDATE,
-    payload: { rooms: data },
+    payload: { rooms: getRoomMetaData() },
   });
 
-  wss.clients.forEach((client) => {
+  lobbySubscribers.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
       client.send(message);
+    } else {
+      lobbySubscribers.delete(client);
     }
   });
 }
@@ -61,19 +64,23 @@ wss.on('connection', (ws) => {
 
   console.log('Client connected', { clientId });
 
-  ws.send(
-    JSON.stringify({
-      type: MessageTypes.ROOM_LIST_UPDATE,
-      payload: { rooms: getRoomMetaData() },
-    })
-  );
-
   ws.on('message', (data) => {
     try {
       const parsed = JSON.parse(data.toString());
       const { type, payload } = parsed;
 
       switch (type) {
+        case MessageTypes.ROOM_LIST_SUBSCRIBE: {
+          lobbySubscribers.add(ws);
+          ws.send(
+            JSON.stringify({
+              type: MessageTypes.ROOM_LIST_UPDATE,
+              payload: { rooms: getRoomMetaData() },
+            })
+          );
+          break;
+        }
+
         case IDENTIFY_TYPE: {
           const name = payload?.name;
           if (name) {
@@ -160,6 +167,7 @@ wss.on('connection', (ws) => {
   ws.on('close', () => {
     console.log('Client disconnected', { clientId });
     clients.delete(clientId);
+    lobbySubscribers.delete(ws);
     const participantRemovedFromRooms = removeParticipantFromAllRooms(clientId);
 
     participantRemovedFromRooms.forEach((room) => {
@@ -172,11 +180,11 @@ wss.on('connection', (ws) => {
         type: 'PARTICIPANT_LEFT',
         payload: { id: clientId },
       });
-
-      if (participantRemovedFromRooms.length > 0) {
-        broadcastRoomList();
-      }
     });
+
+    if (participantRemovedFromRooms.length > 0) {
+      broadcastRoomList();
+    }
   });
 });
 

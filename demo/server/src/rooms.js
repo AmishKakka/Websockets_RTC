@@ -36,6 +36,20 @@ function getRoomMetaData() {
   return summaries;
 }
 
+function getRoomSummaries() {
+  const summaries = [];
+  for (const [, room] of rooms.entries()) {
+    // We drop empty rooms because removeParticipantFromAllRooms already prunes them,
+    // keeping the lobby list focused on active rooms across tabs.
+    if (room.participants.size === 0) continue;
+    summaries.push({
+      name: room.name,
+      participantCount: room.participants.size,
+    });
+  }
+  return summaries;
+}
+
 function getOrCreateRoom(name) {
   if (rooms.has(name)) {
     return rooms.get(name);
@@ -97,6 +111,7 @@ module.exports = {
   removeParticipantFromAllRooms,
   addChatMessage,
   getRoomMetaData,
+  getRoomSummaries,
   createParticipant,
   getParticipantDisplayInfo,
 };
