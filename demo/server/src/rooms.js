@@ -1,15 +1,23 @@
-/**
- * Participant shape:
- * { id, name, ws } where ws is the WebSocket connection.
- */
-
 const { v4: uuidv4 } = require('uuid');
 const rooms = new Map();
+
+/**
+ * Participant shape:
+ * { id, name, ws } where ws is the WebSocket connection instance.
+ */
+function createParticipant(id, name, ws) {
+  return { id, name, ws };
+}
+
+function getParticipantDisplayInfo(participant) {
+  return { id: participant.id, name: participant.name };
+}
 
 class Room {
   constructor(id, name) {
     this.id = id;
     this.name = name;
+    // Map<string, Participant>
     this.participants = new Map();
     this.chatHistory = [];
     this.activePoll = null;
@@ -39,16 +47,23 @@ function getOrCreateRoom(name) {
 
 function joinRoom(roomName, participant) {
   const room = getOrCreateRoom(roomName);
-  room.participants.set(participant.id, participant);
+  const participantRecord = createParticipant(
+    participant.id,
+    participant.name,
+    participant.ws
+  );
+  const participantKey = String(participantRecord.id);
+  room.participants.set(participantKey, participantRecord);
   return room;
 }
 
 function removeParticipantFromAllRooms(participantId) {
   const participantRemovedFromRooms = [];
+  const participantKey = String(participantId);
 
   for (const [roomName, room] of rooms.entries()) {
-    if (room.participants.has(participantId)) {
-      room.participants.delete(participantId);
+    if (room.participants.has(participantKey)) {
+      room.participants.delete(participantKey);
       participantRemovedFromRooms.push(room);
 
       // Delete room if empty
@@ -82,4 +97,6 @@ module.exports = {
   removeParticipantFromAllRooms,
   addChatMessage,
   getRoomMetaData,
+  createParticipant,
+  getParticipantDisplayInfo,
 };

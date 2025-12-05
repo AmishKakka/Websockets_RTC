@@ -100,3 +100,23 @@ This document captures the build steps for the Realtime Study Rooms demo so we c
 
 ### Checkpoint
 - After reading this section, you should be able to sketch a simple diagram showing how a chat message travels from one browser to the server and then out to every other client in the same room.
+
+## Feature 2: Connecting and identifying over WebSockets
+
+### Goal
+- Establish a single WebSocket connection from the browser to the Node server and send a first message that identifies the user by nickname; the server will store a participant id and name for each connection.
+
+### Files you will edit
+- demo/server/src/index.js
+- demo/server/src/rooms.js
+- demo/client/src/ws/useWebSocketClient.js
+- demo/client/src/pages/LobbyPage.jsx
+
+### Steps
+1. Create or reuse a WebSocket helper hook in the client to open one connection per tab and expose a `sendJsonMessage` utility.
+2. After the socket connects, send an `IDENTIFY` message with the chosen nickname so the server can associate the connection with that user.
+3. On the server, assign a new client id for each connection and store `{ id, name, ws }` in a map keyed by client id; update room participant creation to use the stored nickname when present.
+4. Keep the nickname (and, later, the assigned client id) accessible to the Room page—pass the nickname via navigation state or URL params until a shared store is added.
+
+### Checkpoint
+- With devtools open, refresh the app: the server logs should show `Client <id> identified as <nickname>` for each tab, and each tab should maintain exactly one active WebSocket connection.

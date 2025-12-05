@@ -10,6 +10,8 @@ const {
 } = require('./rooms');
 
 const PORT = 3001;
+const clients = new Map(); // clientId -> { ws, name }
+const IDENTIFY_TYPE = MessageTypes.IDENTIFY || 'IDENTIFY';
 const server = http.createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -55,6 +57,7 @@ wss.on('connection', (ws) => {
   const clientId = nextClientId++;
   let currentRoomName = null;
   let userName = `User ${clientId}`;
+  clients.set(clientId, { ws, name: null });
 
   console.log('Client connected', { clientId });
 
@@ -71,10 +74,24 @@ wss.on('connection', (ws) => {
       const { type, payload } = parsed;
 
       switch (type) {
+        case IDENTIFY_TYPE: {
+          const name = payload?.name;
+          if (name) {
+            const existing = clients.get(clientId) || {};
+            clients.set(clientId, { ...existing, ws, name });
+            userName = name;
+            console.log(`Client ${clientId} identified as ${name}`);
+          }
+          break;
+        }
+
         case MessageTypes.JOIN_ROOM: {
+          // TODO: Require identification before allowing room joins.
           const { roomName, name } = payload;
           currentRoomName = roomName;
-          userName = name || `User ${clientId}`;
+          const identifiedName = clients.get(clientId)?.name;
+          userName = identifiedName || name || `User ${clientId}`;
+          clients.set(clientId, { ws, name: userName });
 
           const room = joinRoom(roomName, { id: clientId, name: userName, ws });
 
@@ -142,6 +159,7 @@ wss.on('connection', (ws) => {
 
   ws.on('close', () => {
     console.log('Client disconnected', { clientId });
+    clients.delete(clientId);
     const participantRemovedFromRooms = removeParticipantFromAllRooms(clientId);
 
     participantRemovedFromRooms.forEach((room) => {

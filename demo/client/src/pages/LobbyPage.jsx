@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 const LobbyPage = () => {
   const [nickname, setNickname] = useState('');
+  const [nicknameError, setNicknameError] = useState('');
   const [rooms, setRooms] = useState([]);
   const [selectedRoomName, setSelectedRoomName] = useState(null);
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ const LobbyPage = () => {
 
     ws.current.onopen = () => {
       console.log('Lobby connected to server');
+      // TODO: Send IDENTIFY with nickname once collected so the server knows this user.
     };
 
     ws.current.onmessage = (event) => {
@@ -34,10 +36,11 @@ const LobbyPage = () => {
   }, []);
 
   const handleCreateRoom = () => {
-    if (!nickname) {
-      alert('Please enter a nickname first.');
+    if (!nickname.trim()) {
+      setNicknameError('Please enter a nickname first.');
       return;
     }
+    setNicknameError('');
     const newRoomName = prompt('Enter new room name:');
     if (newRoomName) {
       navigate(`/room/${newRoomName}`, { state: { nickname } });
@@ -49,10 +52,11 @@ const LobbyPage = () => {
       alert('Please select a room to join.');
       return;
     }
-    if (!nickname) {
-      alert('Please enter a nickname.');
+    if (!nickname.trim()) {
+      setNicknameError('Please enter a nickname.');
       return;
     }
+    setNicknameError('');
     navigate(`/room/${selectedRoomName}`, { state: { nickname } });
   };
 
@@ -77,8 +81,14 @@ const LobbyPage = () => {
             className='input'
             placeholder='Enter your display name'
             value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
+            onChange={(e) => {
+              setNickname(e.target.value);
+              if (nicknameError) setNicknameError('');
+            }}
           />
+          {nicknameError && (
+            <p style={{ color: '#d22', marginTop: 6 }}>{nicknameError}</p>
+          )}
           <p className='text-muted' style={{ marginTop: 6 }}>
             This will show up in chat, reactions, and the participant list.
           </p>
