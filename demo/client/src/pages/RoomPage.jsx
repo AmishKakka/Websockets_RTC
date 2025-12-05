@@ -65,6 +65,14 @@ const RoomPage = () => {
           }
           break;
 
+        case 'PARTICIPANTS_UPDATE': {
+          const updated = parsed.payload?.participants;
+          if (Array.isArray(updated)) {
+            setParticipants(updated);
+          }
+          break;
+        }
+
         case 'CHAT_MESSAGE':
           setMessages((prev) => [...prev, parsed.payload]);
           break;

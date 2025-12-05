@@ -8,6 +8,8 @@ const {
   addChatMessage,
   getRoomMetaData,
   roomExists,
+  getParticipantSummaries,
+  removeParticipant,
 } = require('./rooms');
 
 const PORT = 3001;
@@ -47,10 +49,7 @@ function buildRoomStatePayload(room) {
   return {
     roomId: room.id,
     roomName: room.name,
-    participants: Array.from(room.participants.values()).map((p) => ({
-      id: p.id,
-      name: p.name,
-    })),
+    participants: getParticipantSummaries(room),
     chatHistory: room.chatHistory,
   };
 }
@@ -79,6 +78,13 @@ function broadcastRoomList() {
     } else {
       lobbySubscribers.delete(client);
     }
+  });
+}
+
+function broadcastParticipantsUpdate(room) {
+  broadcastToRoom(room, {
+    type: MessageTypes.PARTICIPANTS_UPDATE,
+    payload: { participants: getParticipantSummaries(room) },
   });
 }
 
@@ -145,6 +151,7 @@ wss.on('connection', (ws) => {
             type: MessageTypes.CREATE_ROOM_SUCCESS,
             payload: buildRoomStatePayload(room),
           });
+          broadcastParticipantsUpdate(room);
           broadcastRoomList();
           break;
         }
@@ -177,6 +184,8 @@ wss.on('connection', (ws) => {
             payload: roomStatePayload,
           });
 
+          broadcastParticipantsUpdate(room);
+          // Optional: also send a chat/system message to the room about the join.
           broadcastToRoom(
             room,
             {
@@ -206,6 +215,41 @@ wss.on('connection', (ws) => {
             },
             clientId
           );
+          broadcastRoomList();
+          break;
+        }
+
+        case MessageTypes.LEAVE_ROOM: {
+          const rawRoomName = payload?.roomName;
+          const roomName =
+            typeof rawRoomName === 'string' ? rawRoomName.trim() : '';
+          if (!roomName) {
+            sendError(ws, 'Room name must be provided to leave.');
+            break;
+          }
+          if (!roomExists(roomName)) {
+            sendError(ws, `Room "${roomName}" does not exist.`);
+            break;
+          }
+
+          const room = getOrCreateRoom(roomName);
+          const removed = removeParticipant(room, clientId);
+          if (!removed) {
+            sendError(ws, `You are not a member of room "${roomName}".`);
+            break;
+          }
+
+          currentRoomName = null;
+          broadcastParticipantsUpdate(room);
+          // Optional: also send a chat/system message to the room about the leave.
+          broadcastToRoom(room, {
+            type: MessageTypes.SYSTEM_MESSAGE,
+            payload: { text: `${userName} left the room` },
+          });
+          broadcastToRoom(room, {
+            type: 'PARTICIPANT_LEFT',
+            payload: { id: clientId },
+          });
           broadcastRoomList();
           break;
         }
@@ -288,6 +332,7 @@ wss.on('connection', (ws) => {
         type: 'PARTICIPANT_LEFT',
         payload: { id: clientId },
       });
+      broadcastParticipantsUpdate(room);
     });
 
     if (participantRemovedFromRooms.length > 0) {

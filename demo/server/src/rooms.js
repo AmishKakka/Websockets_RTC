@@ -63,8 +63,7 @@ function getOrCreateRoom(name) {
   return newRoom;
 }
 
-function joinRoom(roomName, participant) {
-  const room = getOrCreateRoom(roomName);
+function addParticipant(room, participant) {
   const participantRecord = createParticipant(
     participant.id,
     participant.name,
@@ -72,16 +71,33 @@ function joinRoom(roomName, participant) {
   );
   const participantKey = String(participantRecord.id);
   room.participants.set(participantKey, participantRecord);
+  return participantRecord;
+}
+
+function removeParticipant(room, participantId) {
+  const participantKey = String(participantId);
+  const existing = room.participants.get(participantKey);
+  if (!existing) return null;
+  room.participants.delete(participantKey);
+  return existing;
+}
+
+function getParticipantSummaries(room) {
+  return Array.from(room.participants.values()).map(getParticipantDisplayInfo);
+}
+
+function joinRoom(roomName, participant) {
+  const room = getOrCreateRoom(roomName);
+  addParticipant(room, participant);
   return room;
 }
 
 function removeParticipantFromAllRooms(participantId) {
   const participantRemovedFromRooms = [];
-  const participantKey = String(participantId);
 
   for (const [roomName, room] of rooms.entries()) {
-    if (room.participants.has(participantKey)) {
-      room.participants.delete(participantKey);
+    const removed = removeParticipant(room, participantId);
+    if (removed) {
       participantRemovedFromRooms.push(room);
     }
   }
@@ -116,4 +132,7 @@ module.exports = {
   roomExists,
   createParticipant,
   getParticipantDisplayInfo,
+  addParticipant,
+  removeParticipant,
+  getParticipantSummaries,
 };

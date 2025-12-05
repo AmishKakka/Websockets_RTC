@@ -177,3 +177,22 @@ This document captures the build steps for the Realtime Study Rooms demo so we c
 
 ### Checkpoint
 - With two tabs in the same room, sending "hello" from tab A should make "hello" appear in both chat timelines almost immediately, in the same order on both sides.
+
+## Feature 6: Live participants list
+
+### Goal
+- Wire the Participants sidebar so it always reflects who is actually in the room, updating when users join, leave, or close their tab.
+
+### Files you will edit
+- demo/server/src/rooms.js
+- demo/server/src/index.js
+- demo/client/src/pages/RoomPage.jsx
+
+### Steps
+1. On the server, keep a `Map` of participants per room and update it whenever someone joins or leaves.
+2. Broadcast a `PARTICIPANTS_UPDATE` message containing an array of `{ id, name }` to everyone in the room whenever membership changes.
+3. In `RoomPage`, update the `participants` state whenever a `PARTICIPANTS_UPDATE` message arrives for the current room.
+4. Render the participants list in the sidebar, optionally highlighting the current user so they can spot themselves.
+
+### Checkpoint
+- With two tabs in the same room, when one tab closes or explicitly leaves, the other tab should see that participant disappear from the list almost immediately.
