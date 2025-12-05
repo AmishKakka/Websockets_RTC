@@ -91,6 +91,8 @@ function removeParticipantFromAllRooms(participantId) {
 function addChatMessage(room, messageData) {
   const chatEntry = {
     id: uuidv4(),
+    roomName: messageData.roomName || room.name,
+    senderId: messageData.senderId,
     sender: messageData.sender,
     text: messageData.text,
     timestamp: new Date().toISOString(),

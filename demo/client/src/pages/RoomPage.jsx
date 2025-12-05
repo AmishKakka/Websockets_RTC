@@ -19,6 +19,7 @@ const RoomPage = () => {
   useEffect(() => {
     // In React 18 StrictMode (dev), effects mount twice; guard so we don't
     // create/close two sockets and emit duplicate join/leave events.
+    // Testing tip: open two tabs, join the same room, and confirm chat stays in sync across both.
     if (hasConnectedRef.current) return;
     hasConnectedRef.current = true;
 
@@ -44,6 +45,14 @@ const RoomPage = () => {
           // TODO: Replace with richer error messaging/retry guidance in the tutorial.
           setJoinError(parsed.payload?.reason || 'Unable to join room.');
           setTimeout(() => navigate('/'), 1200);
+          break;
+        }
+
+        case 'JOIN_ROOM_SUCCESS': {
+          const participantsPayload = parsed.payload?.participants || [];
+          const chatHistoryPayload = parsed.payload?.chatHistory || [];
+          setParticipants(participantsPayload);
+          setMessages(chatHistoryPayload);
           break;
         }
 

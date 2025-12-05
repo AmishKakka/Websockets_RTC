@@ -158,3 +158,22 @@ This document captures the build steps for the Realtime Study Rooms demo so we c
 
 ### Checkpoint
 - Trying to join a non-existing room or leaving the nickname empty should show a clear message on the lobby, not a broken room view or a JavaScript error.
+
+## Feature 5: Realtime chat inside a room
+
+### Goal
+- Turn the chat area on the Room page into a realtime chat timeline that stays synchronized between all participants in a room.
+
+### Files you will edit
+- demo/server/src/rooms.js
+- demo/server/src/index.js
+- demo/client/src/pages/RoomPage.jsx
+
+### Steps
+1. On the server, handle `CHAT_MESSAGE` by verifying the sender is a member of the target room; reject or ignore messages from non-members. Append the message to the room's `chatHistory`, keeping only the last N messages, and broadcast a standardized chat payload (room name, sender name, text, timestamp) to everyone in the room.
+2. When a participant joins a room, include the last N messages from `chatHistory` in the join success payload so their chat UI starts with recent context.
+3. On the client Room page, replace any placeholder chat content with a `messages` state that initializes from the server's join payload and appends each incoming chat event.
+4. When the user clicks "Send", emit a `CHAT_MESSAGE` to the server but do not add it to the UI until the server echoes it back, ensuring all tabs stay in sync and ordering stays consistent.
+
+### Checkpoint
+- With two tabs in the same room, sending "hello" from tab A should make "hello" appear in both chat timelines almost immediately, in the same order on both sides.

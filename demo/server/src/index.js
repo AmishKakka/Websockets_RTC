@@ -211,17 +211,52 @@ wss.on('connection', (ws) => {
         }
 
         case MessageTypes.CHAT_MESSAGE: {
-          if (!currentRoomName) return;
-          const room = getOrCreateRoom(currentRoomName);
+          const incomingRoom =
+            typeof payload?.roomName === 'string'
+              ? payload.roomName.trim()
+              : currentRoomName;
+          const roomName = typeof incomingRoom === 'string' ? incomingRoom : '';
+          const text =
+            typeof payload?.text === 'string' ? payload.text.trim() : '';
+
+          if (!roomName) {
+            sendError(ws, 'Chat messages must include a roomName.');
+            break;
+          }
+          if (!text) {
+            sendError(ws, 'Chat messages must include text content.');
+            break;
+          }
+          if (!roomExists(roomName)) {
+            sendError(ws, `Room "${roomName}" does not exist.`);
+            break;
+          }
+
+          const room = getOrCreateRoom(roomName);
+          const participantKey = String(clientId);
+          const participant = room.participants.get(participantKey);
+
+          if (!participant) {
+            sendError(ws, `You are not a member of room "${roomName}".`);
+            break;
+          }
+
+          const senderName =
+            participant.name ||
+            clients.get(clientId)?.name ||
+            payload?.sender ||
+            `User ${clientId}`;
 
           const chatEntry = addChatMessage(room, {
-            sender: userName,
-            text: payload.text,
+            roomName,
+            senderId: participant.id,
+            sender: senderName,
+            text,
           });
 
           broadcastToRoom(room, {
             type: MessageTypes.CHAT_MESSAGE,
-            payload: chatEntry,
+            payload: { ...chatEntry, roomName },
           });
           break;
         }
