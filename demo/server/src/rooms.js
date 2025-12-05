@@ -39,8 +39,8 @@ function getRoomMetaData() {
 function getRoomSummaries() {
   const summaries = [];
   for (const [, room] of rooms.entries()) {
-    // We drop empty rooms because removeParticipantFromAllRooms already prunes them,
-    // keeping the lobby list focused on active rooms across tabs.
+    // Skip empty rooms so the lobby focuses on active rooms, even though we keep
+    // empty ones in memory to support navigation handoffs between tabs.
     if (room.participants.size === 0) continue;
     summaries.push({
       name: room.name,
@@ -83,11 +83,6 @@ function removeParticipantFromAllRooms(participantId) {
     if (room.participants.has(participantKey)) {
       room.participants.delete(participantKey);
       participantRemovedFromRooms.push(room);
-
-      // Delete room if empty
-      if (room.participants.size === 0) {
-        rooms.delete(roomName);
-      }
     }
   }
   return participantRemovedFromRooms;

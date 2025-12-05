@@ -28,20 +28,17 @@ const LobbyPage = () => {
     ws.current.onmessage = (event) => {
       try {
         const { type, payload } = JSON.parse(event.data);
-        if (type === 'ROOM_LIST_UPDATE') {
-          if (payload.rooms) {
-            setRooms(payload.rooms);
-          }
+        if (type === 'ROOM_LIST_UPDATE' && payload.rooms) {
+          setRooms(payload.rooms);
         } else if (type === 'ERROR') {
           setError(payload?.reason || 'Something went wrong.');
-        } else if (
-          type === 'CREATE_ROOM_SUCCESS' ||
-          type === 'JOIN_ROOM_SUCCESS'
-        ) {
+        } else if (type === 'CREATE_ROOM_SUCCESS') {
           setError('');
           const roomName = payload?.roomName;
           if (roomName) {
-            navigate(`/room/${roomName}`, { state: { nickname: nicknameRef.current } });
+            navigate(`/room/${roomName}`, {
+              state: { nickname: nicknameRef.current },
+            });
           }
         }
       } catch (err) {
@@ -67,7 +64,7 @@ const LobbyPage = () => {
         setError('Connecting to server. Please try again in a moment.');
         return;
       }
-      ws.current?.send(
+      ws.current.send(
         JSON.stringify({
           type: 'CREATE_ROOM',
           payload: { roomName: newRoomName, createdBy: nickname },
@@ -87,16 +84,7 @@ const LobbyPage = () => {
     }
     setNicknameError('');
     setError('');
-    if (!ws.current || ws.current.readyState !== WebSocket.OPEN) {
-      setError('Connecting to server. Please try again in a moment.');
-      return;
-    }
-    ws.current?.send(
-      JSON.stringify({
-        type: 'JOIN_ROOM',
-        payload: { roomName: selectedRoomName, name: nickname },
-      })
-    );
+    navigate(`/room/${selectedRoomName}`, { state: { nickname } });
   };
 
   return (

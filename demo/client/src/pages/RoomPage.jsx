@@ -14,8 +14,14 @@ const RoomPage = () => {
   const [joinError, setJoinError] = useState('');
 
   const ws = useRef(null);
+  const hasConnectedRef = useRef(false);
 
   useEffect(() => {
+    // In React 18 StrictMode (dev), effects mount twice; guard so we don't
+    // create/close two sockets and emit duplicate join/leave events.
+    if (hasConnectedRef.current) return;
+    hasConnectedRef.current = true;
+
     ws.current = new WebSocket('ws://localhost:3001');
 
     ws.current.onopen = () => {
@@ -79,6 +85,7 @@ const RoomPage = () => {
     return () => {
       if (ws.current) ws.current.close();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, nickname]);
 
   const logTodo = (label) => {
