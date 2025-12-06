@@ -150,3 +150,211 @@ pre {
 }
 
 .nav-btn.next { background-color: #04AA6D; color: white; }
+
+/* --- Module 2 Specific Styles --- */
+
+/* Promise diagram styling */
+.promise-diagram {
+    text-align: center;
+    font-weight: bold;
+}
+
+.promise-diagram pre {
+    background-color: #f0f0f0;
+    color: #333;
+    padding: 15px;
+    border-radius: 5px;
+    overflow: auto;
+}
+
+.promise-diagram-italic {
+    font-style: italic;
+}
+
+/* NAT explanation note */
+.nat-note {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+}
+
+/* STUN and TURN server boxes */
+.server-item {
+    margin-top: 20px;
+}
+
+.server-diagram {
+    background-color: #f9f9f9;
+    padding: 12px;
+    border-radius: 5px;
+    margin-left: 20px;
+}
+
+.server-diagram pre {
+    margin: 0;
+}
+
+.server-description {
+    margin-left: 20px;
+    margin-top: 8px;
+}
+
+/* Signaling key point */
+.signaling-note {
+    background-color: #e7f3ff;
+    border-left: 4px solid #2196F3;
+}
+
+/* Infrastructure diagram */
+.infrastructure-diagram {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+/* Connection setup comparison */
+.connection-comparison {
+    background-color: #fff3cd;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.connection-comparison-title {
+    font-weight: bold;
+}
+
+/* Assessment section */
+.assessment-title {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #d32f2f;
+}
+
+.assessment-negative {
+    color: #333;
+}
+
+.assessment-positive {
+    color: #333;
+    margin-top: 20px;
+}
+
+/* Cost breakdown styling */
+.cost-breakdown {
+    background-color: #fff3cd;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.cost-breakdown-title {
+    font-weight: bold;
+}
+
+/* When WebRTC justifies section */
+.when-justified {
+    margin-top: 30px;
+}
+
+.when-justified-title {
+    font-weight: bold;
+}
+
+/* When WebRTC is overkill section */
+.when-overkill {
+    margin-top: 30px;
+}
+
+.when-overkill-title {
+    font-weight: bold;
+}
+
+.overkill-diagram {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+/* Opinion styling */
+.opinion-title {
+    font-size: 1.05em;
+    color: #c62828;
+}
+
+.opinion-claim {
+    font-weight: bold;
+}
+
+.hybrid-note {
+    background-color: #e8f5e9;
+    border-left: 4px solid #4caf50;
+}
+
+.hybrid-note-title {
+    font-weight: bold;
+}
+
+/* Future outlook styling */
+.emerging-landscape {
+    margin-top: 30px;
+}
+
+.webtransport-title {
+    font-weight: bold;
+}
+
+.webtransport-status {
+    font-weight: bold;
+}
+
+.webtransport-description {
+    font-weight: bold;
+}
+
+.webtransport-diagram {
+    background-color: #f0f7ff;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.webtransport-diagram-title {
+    font-weight: bold;
+}
+
+/* Technology comparison table */
+.tech-comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.tech-comparison-table thead {
+    background-color: #f5f5f5;
+}
+
+.tech-comparison-table th,
+.tech-comparison-table td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+}
+
+.tech-comparison-table tbody tr:nth-child(even) {
+    background-color: #fafafa;
+}
+
+.tech-comparison-table tbody tr:nth-child(2) {
+    background-color: #fafafa;
+}
+
+.tech-comparison-table td:first-child {
+    font-weight: bold;
+}
+
+/* Prediction styling */
+.prediction-section {
+    margin-top: 30px;
+}
+
+.prediction-title {
+    font-weight: bold;
+}
