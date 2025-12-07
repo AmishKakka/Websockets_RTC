@@ -231,6 +231,8 @@ const RoomPage = () => {
     }
   };
 
+  remoteStreams.forEach((p) => console.log('remote:', p));
+
   return (
     <div className='room-layout'>
       <div className='room-main'>
@@ -289,11 +291,24 @@ const RoomPage = () => {
               </div>
             </div>
 
-            {remoteStreams.map((peer) => (
-              <div key={peer.id} className='video-tile'>
-                <VideoPlayer stream={peer.stream} isLocal={false} />
-              </div>
-            ))}
+            {remoteStreams.map((peer) => {
+              const participant = participants.find(
+                (p) => String(p.id) === String(peer.id)
+              );
+              const displayName = participant
+                ? participant.name
+                : `User ${peer.id}`;
+
+              return (
+                <div key={peer.id} className='video-tile'>
+                  <VideoPlayer
+                    stream={peer.stream}
+                    isLocal={false}
+                    username={displayName}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
 
