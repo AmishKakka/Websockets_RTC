@@ -278,3 +278,102 @@ This document captures the build steps for the Realtime Study Rooms demo so we c
 ### Checkpoint
 
 - With two tabs in the same room, clicking a reaction in one tab should trigger visible feedback in the other tab, and typing in one tab should show a "X is typing..." message in the other.
+
+## Feature 8: WebRTC signaling overview
+
+### Goal
+
+- Give the learner a mental model of how WebRTC signaling rides on the existing WebSocket connection, including the offer/answer/ICE message types and which side sends each.
+
+### Files you will edit
+
+- demo/server/src/messages.js
+- demo/server/src/index.js
+- demo/client/src/ws/useWebSocketClient.js
+- demo/client/src/ws/useWebRTC.js
+- demo/client/src/pages/RoomPage.jsx
+
+### Steps
+
+1. Add WebRTC-specific message types (`WEBRTC_OFFER`, `WEBRTC_ANSWER`, `WEBRTC_ICE_CANDIDATE`) to the shared `messages.js` enum so both server and client agree on signaling events.
+2. Decide who sends which payload: the caller sends `WEBRTC_OFFER { targetId, roomName, sdp }`, the callee replies with `WEBRTC_ANSWER { targetId, roomName, sdp }`, and both sides emit `WEBRTC_ICE_CANDIDATE { targetId, roomName, candidate }` as ICE discovers network paths.
+3. In the Node server handler, add cases that simply relay these signaling messages to the intended peer(s) in the same room, tagging them with `senderId` and using the existing WebSocket routing instead of trying to interpret SDP/ICE on the server.
+4. In the client WebSocket helper (or the inline socket in `RoomPage`), wire `useWebRTC` so it can send signaling over the established WebSocket and intercept any `WEBRTC_*` messages before they hit the rest of the chat/participants switch.
+5. In `useWebRTC` and `RoomPage`, decide when to start the handshake: after a user joins a room, existing participants call `connectToNewUser` to emit an offer to the newcomer, and when a `WEBRTC_OFFER` arrives the callee sets the remote description, creates an answer, and processes queued ICE candidates.
+
+### Checkpoint
+
+- You can sketch the message flow for someone joining a call: which `WEBRTC_*` messages travel over WebSockets, who originates each one, and how the server forwards them so peers can establish a direct media connection.
+
+## Feature 9: Joining a call and showing your own video
+
+### Goal
+
+- Wire up `getUserMedia`, create a WebRTC `RTCPeerConnection`, and show your own camera feed in the Video area when you join a call.
+
+### Files you will edit
+
+- demo/client/src/ws/useWebRTC.js
+- demo/client/src/components/VideoPlayer.jsx
+- demo/client/src/pages/RoomPage.jsx
+
+### Steps
+
+1. Build a `useWebRTC` hook that calls `navigator.mediaDevices.getUserMedia({ video: true, audio: true })`, stores the local stream in state/refs, and attaches those tracks to new `RTCPeerConnection` instances configured with STUN servers.
+2. Have the hook expose helpers for the page to call: initialize/join (start local media), `toggleAudio`, `toggleVideo`, `handleWebRTCSignal` (to process offers/answers/ICE), `connectToNewUser` (to initiate an offer), `removePeer`, `leaveCall`, plus `localStream` and `remoteStreams`.
+3. In `RoomPage`, after the user is ready to join, open the WebSocket, send `JOIN_ROOM`, and wire incoming `WEBRTC_*` events to `handleWebRTCSignal`; when `PARTICIPANT_JOINED` arrives, call `connectToNewUser` to start the offer/answer exchange over the WebSocket signaling channel.
+4. Render the first video tile with the local stream using `VideoPlayer`, mirroring it when `isLocal` is true and overlaying the user’s name; render additional tiles for each remote stream with the matching participant’s display name.
+5. Add UI controls that call `toggleAudio`/`toggleVideo`, disable them until the local stream exists, and surface basic errors if camera/mic access is denied (e.g., log and show a brief message before redirecting).
+6. Ensure cleanup on leave/unmount by calling `leaveCall` to stop local tracks, close peer connections, clear remote streams, and close the room’s WebSocket connection.
+
+### Checkpoint
+
+- In a room, clicking “Join call” starts the camera and shows your own video in the first tile; clicking “Leave call” or navigating away stops tracks, closes peers, and removes your video from the grid.
+
+## Feature 10: Remote peers and video tiles
+
+### Goal
+
+- Connect multiple participants in the same room over WebRTC, receive their media tracks, and render remote video tiles labeled with participant names.
+
+### Files you will edit
+
+- demo/server/src/index.js
+- demo/client/src/ws/useWebRTC.js
+- demo/client/src/components/VideoPlayer.jsx
+- demo/client/src/pages/RoomPage.jsx
+
+### Steps
+
+1. In `useWebRTC.js`, create/manage one `RTCPeerConnection` per remote participant, attaching local tracks and wiring `onicecandidate` to send `WEBRTC_ICE_CANDIDATE` over the WebSocket signaling channel and `ontrack` to capture incoming media.
+2. When a participant joins, start the offer/answer exchange: existing peers call `connectToNewUser` to emit a `WEBRTC_OFFER`, and receivers handle `WEBRTC_OFFER` by setting the remote description, creating/sending a `WEBRTC_ANSWER`, and queuing/adding ICE candidates until negotiation completes.
+3. Collect incoming `MediaStream` objects from `ontrack`, store them alongside the sender/participant id, and keep this list updated as new tracks arrive.
+4. In `RoomPage`, render one `VideoPlayer` per remote stream in the Video area, matching each stream’s id to the participant list to show the correct display name.
+5. On `PARTICIPANT_LEFT`, explicit leave, or page unmount, close the corresponding peer connection, drop its stream from state, and ensure the tile disappears so only active participants are shown.
+
+### Checkpoint
+
+- With two browser tabs in the same room, after both click “Join call”, each tab shows its own video plus the other user’s video in separate tiles; when one tab leaves, the other tab’s remote tile disappears. 
+
+## Feature 11: Media controls and leaving the call cleanly
+
+### Goal
+
+- Wire the mute and toggle camera controls, and ensure leaving the call tears down WebRTC state and media tracks cleanly for everyone.
+
+### Files you will edit
+
+- demo/client/src/ws/useWebRTC.js
+- demo/client/src/pages/RoomPage.jsx
+
+### Steps
+
+1. In `useWebRTC.js`, implement `toggleAudio` and `toggleVideo` to enable/disable the relevant tracks on the local stream and expose the current booleans so the UI can reflect state.
+2. Connect the RoomPage buttons (“Mute”, “Stop/Start Video”) to these handlers, disabling them until the local stream exists and swapping labels/styles based on `isAudioEnabled`/`isVideoEnabled`.
+3. Add a `leaveCall` helper in `useWebRTC.js` that stops all local tracks, closes every `RTCPeerConnection`, clears refs, and resets `localStream`/`remoteStreams`.
+4. Call `leaveCall` when the user clicks “Leave call” and in the RoomPage cleanup effect so no orphaned peers or active camera/mic remain after navigation.
+5. Optionally emit a lightweight leave/signal message so other peers can drop the corresponding remote tile immediately when someone exits the call.
+
+### Checkpoint
+
+- You can mute/unmute and toggle the camera mid-call, and leaving the call reliably closes connections, removes all video tiles, and releases camera/mic access in both tabs.
