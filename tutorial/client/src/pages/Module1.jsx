@@ -101,7 +101,7 @@ function Module1() {
           <div className="note">
             <strong>Key Distinction: The Protocol vs. The API</strong>
             <ul>
-                <li><strong>The IETF (Internet Engineering Task Force):</strong> Standardized the <em>Wire Protocol</em>. This defines how binary 0s and 1s travel over the network. The standard is <strong>RFC 6455</strong>.</li>
+                <li><strong>The IETF (Internet Engineering Task Force):</strong> Standardized the <em>Wire Protocol</em>. This defines how binary 0s and 1s travel over the network. <strong>RFC 6455 </strong> defines how WebSocket messages (text and binary data) are structured into frames to be sent efficiently.</li>
                 <li><strong>The W3C (World Wide Web Consortium):</strong> Standardized the <em>API</em>. This defines how JavaScript developers interact with the protocol (e.g., <code>new WebSocket()</code>, <code>onmessage</code>).</li>
             </ul>
           </div>
